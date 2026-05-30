@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/theme/app_colors.dart';
+import '../../../security/mock_location_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,8 +12,20 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool _isLogin = true;
   bool _obscurePassword = true;
+  bool _fakeGpsDetected = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFakeGps();
+  }
+
+  Future<void> _checkFakeGps() async {
+    final detected = await MockLocationService.isFakeGpsInstalled();
+    if (mounted) setState(() => _fakeGpsDetected = detected);
+  }
 
   @override
   void dispose() {
@@ -23,6 +36,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_fakeGpsDetected) return _FakeGpsBlockScreen();
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -185,6 +199,43 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+class _FakeGpsBlockScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A1A2E),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.gps_off, color: Color(0xFFE94560), size: 72),
+              const SizedBox(height: 24),
+              const Text(
+                'Ubicación simulada detectada',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Se detectó una aplicación de GPS falso activa en este dispositivo. '
+                'Desinstálala para poder usar la aplicación.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // Widget privado para los tabs
 class _TabButton extends StatelessWidget {
   final String label;
@@ -209,7 +260,7 @@ class _TabButton extends StatelessWidget {
             color: isActive ? AppColors.tabActive : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
             boxShadow: isActive
-                ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 1))]
+                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 4, offset: const Offset(0, 1))]
                 : null,
           ),
           child: Text(
