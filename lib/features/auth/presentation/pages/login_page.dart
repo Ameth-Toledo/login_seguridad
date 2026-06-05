@@ -9,7 +9,7 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with WidgetsBindingObserver {
   bool _isLogin = true;
   bool _obscurePassword = true;
   bool _fakeGpsDetected = false;
@@ -19,7 +19,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkFakeGps();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkFakeGps();
   }
 
   Future<void> _checkFakeGps() async {
@@ -29,6 +35,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -36,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_fakeGpsDetected) return _FakeGpsBlockScreen();
+    if (_fakeGpsDetected) return _FakeGpsBlockScreen(onRetry: _checkFakeGps);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -200,6 +207,10 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class _FakeGpsBlockScreen extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _FakeGpsBlockScreen({required this.onRetry});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,9 +235,21 @@ class _FakeGpsBlockScreen extends StatelessWidget {
               const SizedBox(height: 12),
               const Text(
                 'Se detectó una aplicación de GPS falso activa en este dispositivo. '
-                'Desinstálala para poder usar la aplicación.',
+                'Desactívala para poder usar la aplicación.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 14, height: 1.5),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Ya lo desactivé, reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE94560),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ],
           ),
