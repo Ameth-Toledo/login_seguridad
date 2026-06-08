@@ -3,25 +3,25 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // 🍕 Fondos Calientes y Clásicos
-  static const background = Color(0xFFFFF8E1);     // Crema suave (Masa/Harina)
-  static const surface = Color(0xFFFFFFFF);        // Blanco puro para las tarjetas (Cards)
-  static const surfaceVariant = Color(0xFFF7EED6); // Crema un poco más oscuro para contrastes
+  // Fondos
+  static const background = Color(0xFF0D0D0D);
+  static const surface = Color(0xFF161616);
+  static const surfaceVariant = Color(0xFF1E1E1E);
 
-  // 🎯 Acento principal — ¡Rojo Pomodoro y Queso Gratinado!
-  static const accent = Color(0xFFD32F2F);         // Rojo Pomodoro Italiano
-  static const accentDim = Color(0xFFFFA000);      // Naranja/Dorado Horno
+  // Acento principal — verde-menta eléctrico
+  static const accent = Color(0xFFF6DCB9);
+  static const accentDim = Color(0xFFBA5E02);
 
-  // ✍️ Texto (Corteza de Madera y Canela)
-  static const textPrimary = Color(0xFF3E2723);    // Marrón corteza oscuro (Alta legibilidad)
-  static const textSecondary = Color(0xFF795548);  // Marrón café suave
+  // Texto
+  static const textPrimary = Color(0xFFF0F0F0);
+  static const textSecondary = Color(0xFF888888);
 
-  // ⚠️ Estados (Alertas en la cocina)
-  static const error = Color(0xFFC62828);          // Rojo oscuro para errores críticos
-  static const warning = Color(0xFFFB8C00);        // Naranja para advertencias
+  // Estado
+  static const error = Color(0xFFFF4D6A);
+  static const warning = Color(0xFFFFB347);
 
-  // ⏱️ Progreso del Horno / Timer (Colores de la bandera Italiana 🇮🇹)
-  static const timerGreen = Color(0xFF2E7D32);     // Verde Albahaca (Sesión segura / caliente)
-  static const timerYellow = Color(0xFFFBC02D);    // Amarillo Queso (Media temperatura)
-  static const timerRed = Color(0xFFD32F2F);       // Rojo Salsa (¡Se enfría la pizza!)
+  // Timer progress
+  static const timerGreen = Color(0xFF00E5BE);
+  static const timerYellow = Color(0xFFFFD166);
+  static const timerRed = Color(0xFFFF4D6A);
 }

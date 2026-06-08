@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-// Mantengo tus imports originales
 import '../providers/auth_provider.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../../../shared/widgets/custom_button.dart';
-
-// --- CONSTANTES DE ESTILO PARA LA PIZZERÍA ---
-class PizzaColors {
-  static const Color primaryRed = Color(0xFFD32F2F); // Rojo Pomodoro
-  static const Color accentOrange = Color(0xFFFFA000); // Queso/Horno
-  static const Color backgroundCrema = Color(0xFFFFF8E1); // Masa/Harina suave
-  static const Color textDark = Color(0xFF3E2723); // Marrón corteza oscuro
-  static const Color textSecondary = Color(0xFF795548);
-}
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -41,9 +31,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
     super.initState();
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 600),
     )..forward();
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInCubic);
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
   }
 
   @override
@@ -71,67 +61,37 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
     final isLoading = auth.status == AuthStatus.loading;
 
     return Scaffold(
-      // Fondo Crema idéntico al Login
-      backgroundColor: PizzaColors.backgroundCrema,
+      backgroundColor: AppColors.background,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 24),
                   _buildBackButton(context),
-                  const SizedBox(height: 20),
-
-                  // Encabezado centrado y amigable
-                  Center(child: _buildHeader()),
-                  const SizedBox(height: 30),
-
-                  // Tarjeta contenedor blanca para el formulario de registro
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [
-                        BoxShadow(
-                          color: PizzaColors.textDark.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildFields(),
-                        const SizedBox(height: 28),
-
-                        if (auth.errorMessage != null) ...[
-                          _buildError(auth.errorMessage!),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Botón de acción principal
-                        SizedBox(
-                          width: double.infinity,
-                          height: 55,
-                          child: CustomButton(
-                            label: 'Crear mi cuenta pizzera',
-                            isLoading: isLoading,
-                            onPressed: _submit,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildLoginLink(context),
-                      ],
-                    ),
+                  const SizedBox(height: 28),
+                  _buildHeader(),
+                  const SizedBox(height: 40),
+                  _buildFields(),
+                  const SizedBox(height: 28),
+                  if (auth.errorMessage != null) ...[
+                    _buildError(auth.errorMessage!),
+                    const SizedBox(height: 16),
+                  ],
+                  CustomButton(
+                    label: 'Crear cuenta',
+                    isLoading: isLoading,
+                    onPressed: _submit,
                   ),
-
+                  const SizedBox(height: 20),
+                  _buildLoginLink(context),
                   const SizedBox(height: 32),
-                  _buildSecurityNoteVisual(),
+                  _buildSecurityNote(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -146,47 +106,49 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
     return GestureDetector(
       onTap: () => context.pop(),
       child: Container(
-        width: 44,
-        height: 44,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: PizzaColors.textDark.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
         ),
-        child: const Padding(
-          // Un pequeño ajuste de padding para centrar visualmente el icono 'ios'
-          padding: EdgeInsets.only(left: 6),
-          child: Icon(Icons.arrow_back_ios,
-              color: PizzaColors.primaryRed, size: 18),
-        ),
+        child: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textSecondary, size: 16),
       ),
     );
   }
 
   Widget _buildHeader() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.accent.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: AppColors.accent.withOpacity(0.3), width: 1.5),
+          ),
+          child: const Icon(Icons.person_add_outlined,
+              color: AppColors.accent, size: 26),
+        ),
+        const SizedBox(height: 24),
         const Text(
-          '¡Únete a la Familia!',
+          'Crear cuenta',
           style: TextStyle(
-            color: PizzaColors.primaryRed,
-            fontSize: 34,
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Serif', // Puedes usar tu fuente preferida
+            color: AppColors.textPrimary,
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 6),
         const Text(
-          'Regístrate para empezar a ordenar tu pizza favorita',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: PizzaColors.textSecondary, fontSize: 15),
+          'Regístrate para empezar a controlar tus finanzas',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
         ),
       ],
     );
@@ -198,70 +160,73 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
         // Nombre
         CustomTextField(
           controller: _nombreCtrl,
-          label: '¿Cómo te llamamos? (Nombre)',
+          label: 'Nombre completo',
           keyboardType: TextInputType.name,
-          prefixIcon: const Icon(Icons.person_outline_rounded, color: PizzaColors.textSecondary),
+          prefixIcon: const Icon(Icons.person_outline_rounded),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Dinos tu nombre para la entrega';
-            if (v.trim().length < 2) return 'El nombre debe ser más largo';
+            if (v == null || v.trim().isEmpty) return 'Ingresa tu nombre';
+            if (v.trim().length < 2) return 'Nombre muy corto';
             return null;
           },
         ),
-        const SizedBox(height: 18),
-
+        const SizedBox(height: 16),
         // Email
         CustomTextField(
           controller: _emailCtrl,
           label: 'Correo electrónico',
           keyboardType: TextInputType.emailAddress,
-          prefixIcon: const Icon(Icons.alternate_email_rounded, color: PizzaColors.textSecondary),
+          prefixIcon: const Icon(Icons.mail_outline_rounded),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Ingresa tu correo pizzero';
-            if (!v.contains('@') || !v.contains('.')) return 'Este correo no parece válido';
+            if (v == null || v.isEmpty) return 'Ingresa tu correo';
+            if (!v.contains('@') || !v.contains('.'))
+              return 'Correo inválido';
             return null;
           },
         ),
-        const SizedBox(height: 18),
-
+        const SizedBox(height: 16),
         // Contraseña
         CustomTextField(
           controller: _passwordCtrl,
           label: 'Contraseña',
           obscureText: _obscurePass,
-          prefixIcon: const Icon(Icons.lock_open_rounded, color: PizzaColors.textSecondary),
+          prefixIcon: const Icon(Icons.lock_outline_rounded),
           suffixIcon: IconButton(
             icon: Icon(
-              _obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              color: PizzaColors.textSecondary.withOpacity(0.5),
+              _obscurePass
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: AppColors.textSecondary,
               size: 20,
             ),
             onPressed: () => setState(() => _obscurePass = !_obscurePass),
           ),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Elige una contraseña segura';
-            if (v.length < 6) return 'Mínimo 6 ingredientes (caracteres)';
+            if (v == null || v.isEmpty) return 'Ingresa una contraseña';
+            if (v.length < 6) return 'Mínimo 6 caracteres';
             return null;
           },
         ),
-        const SizedBox(height: 18),
-
+        const SizedBox(height: 16),
         // Confirmar contraseña
         CustomTextField(
           controller: _confirmCtrl,
           label: 'Confirmar contraseña',
           obscureText: _obscureConfirm,
-          prefixIcon: const Icon(Icons.lock_outline_rounded, color: PizzaColors.textSecondary),
+          prefixIcon: const Icon(Icons.lock_outline_rounded),
           suffixIcon: IconButton(
             icon: Icon(
-              _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              color: PizzaColors.textSecondary.withOpacity(0.5),
+              _obscureConfirm
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: AppColors.textSecondary,
               size: 20,
             ),
-            onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+            onPressed: () =>
+                setState(() => _obscureConfirm = !_obscureConfirm),
           ),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Asegura tu contraseña repitiéndola';
-            if (v != _passwordCtrl.text) return 'Las contraseñas no combinan igual';
+            if (v == null || v.isEmpty) return 'Confirma tu contraseña';
+            if (v != _passwordCtrl.text) return 'Las contraseñas no coinciden';
             return null;
           },
         ),
@@ -273,20 +238,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: PizzaColors.primaryRed.withOpacity(0.05),
+        color: AppColors.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: PizzaColors.primaryRed.withOpacity(0.2)),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.sentiment_very_dissatisfied, color: PizzaColors.primaryRed, size: 20),
-          const SizedBox(width: 12),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(message,
-                style: const TextStyle(
-                    color: PizzaColors.primaryRed,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500)),
+                style:
+                const TextStyle(color: AppColors.error, fontSize: 13)),
           ),
         ],
       ),
@@ -294,50 +257,56 @@ class _RegisterPageState extends ConsumerState<RegisterPage>
   }
 
   Widget _buildLoginLink(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          '¿Ya eres de la familia?',
-          style: TextStyle(color: PizzaColors.textSecondary, fontSize: 14),
-        ),
-        TextButton(
-          onPressed: () => context.pop(),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            '¿Ya tienes cuenta?',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
-          child: const Text(
-            'Inicia sesión',
-            style: TextStyle(
-              color: PizzaColors.primaryRed,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          TextButton(
+            onPressed: () => context.pop(),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Inicia sesión',
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildSecurityNoteVisual() {
-    return Opacity(
-      opacity: 0.5,
-      child: Center(
-        child: Column(
-          children: [
-            const Icon(Icons.lock_outline_rounded, size: 18, color: PizzaColors.textSecondary),
-            const SizedBox(height: 6),
-            Text(
-              'Al registrarte, tu sesión se almacena de manera encriptada y segura\nbajo estándares de alta seguridad tecnológica (AES-256).',
-              textAlign: TextAlign.center,
+  Widget _buildSecurityNote() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.shield_outlined, size: 15, color: AppColors.accent),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Al registrarte, tu token se guardará en almacén encriptado (AES-256 / Keystore) de forma segura.',
               style: TextStyle(
-                  color: PizzaColors.textSecondary,
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic),
+                  color: AppColors.textSecondary, fontSize: 11.5),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

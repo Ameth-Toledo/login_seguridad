@@ -2,97 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../../../../shared/theme/app_colors.dart';
-import 'dart:ui'; // Para FontFeature
 
-// --- CONSTANTES DE ESTILO PARA LA PIZZERÍA ---
-class PizzaColors {
-  static const Color primaryRed = Color(0xFFD32F2F); // Rojo Pomodoro
-  static const Color accentOrange = Color(0xFFFFA000); // Queso/Horno
-  static const Color backgroundCrema = Color(0xFFFFF8E1); // Masa/Harina suave
-  static const Color textDark = Color(0xFF3E2723); // Marrón corteza oscuro
-  static const Color textSecondary = Color(0xFF795548);
-}
+// ─── Datos simulados ──────────────────────────────────────────────────────────
 
-// Supongamos que esta constante viene de tu configuración original
-const int kInactivitySeconds = 120;
-
-// ─── Datos de la Pizzería (Glosario Gourmet) ──────────────────────────
-
-class _ConceptoPizza {
+class _Tx {
   final String titulo;
   final String categoria;
-  final int popularidad; // Porcentaje de pedidos (1 al 100)
-  final bool esPicante;
-  final String tiempoPreparacion;
+  final double monto;
+  final bool esIngreso;
+  final String fecha;
   final IconData icono;
-  final String descripcion;
 
-  const _ConceptoPizza({
+  const _Tx({
     required this.titulo,
     required this.categoria,
-    required this.popularidad,
-    required this.esPicante,
-    required this.tiempoPreparacion,
+    required this.monto,
+    required this.esIngreso,
+    required this.fecha,
     required this.icono,
-    required this.descripcion,
   });
 }
 
-const _especialidades = [
-  _ConceptoPizza(
-    titulo: 'Masa Madre de 48 Horas',
-    categoria: 'Secretos de Cocina',
-    popularidad: 98,
-    esPicante: false,
-    tiempoPreparacion: 'Alta Dedicación',
-    icono: Icons.bakery_dining_rounded,
-    descripcion: 'Nuestra base artesanal fermentada lentamente en frío. Aporta una textura ligera, alveolada y de fácil digestión.',
-  ),
-  _ConceptoPizza(
-    titulo: 'Pizza Pepperoni Suprema',
-    categoria: 'Especialidades Carnívoras',
-    popularidad: 95,
-    esPicante: true,
-    tiempoPreparacion: '12 min',
-    icono: Icons.local_pizza_rounded,
-    descripcion: 'Doble porción de pepperoni premium madurado, mozzarella hilada y un toque sutil de pepperoncino sobre salsa pomodoro.',
-  ),
-  _ConceptoPizza(
-    titulo: 'Margherita con Mozzarella di Bufala',
-    categoria: 'Clásicas Italianas',
-    popularidad: 90,
-    esPicante: false,
-    tiempoPreparacion: '10 min',
-    icono: Icons.eco_rounded,
-    descripcion: 'La reina de Nápoles. Salsa de tomates San Marzano, auténtica mozzarella de búfala, albahaca fresca y aceite de oliva virgen.',
-  ),
-  _ConceptoPizza(
-    titulo: 'Salsa Pomodoro San Marzano',
-    categoria: 'Ingredientes Base',
-    popularidad: 88,
-    esPicante: false,
-    tiempoPreparacion: 'Preparación diaria',
-    icono: Icons.soup_kitchen_rounded,
-    descripcion: 'Tomates cultivados a las faldas del Vesubio, triturados a mano y sazonados con sal marina y albahaca. Cero conservantes.',
-  ),
-  _ConceptoPizza(
-    titulo: 'Cuatro Quesos de la Casa',
-    categoria: 'Especialidades Blancas',
-    popularidad: 85,
-    esPicante: false,
-    tiempoPreparacion: '11 min',
-    icono: Icons.restaurant_rounded, // Reemplazado por uno válido
-    descripcion: 'Una rica amalgama de Mozzarella, Gorgonzola DOP, Parmigiano Reggiano rallado e hilos de queso Provolone ahumado.',
-  ),
-  _ConceptoPizza(
-    titulo: 'Aceite de Oliva al Peperoncino',
-    categoria: 'Acompañamientos',
-    popularidad: 78,
-    esPicante: true,
-    tiempoPreparacion: 'Inmediato',
-    icono: Icons.opacity_rounded, // Corregido el carácter extraño
-    descripcion: 'Aceite de oliva extra virgen macerado artesanalmente con copos de chiles secos picantes, ideal para los bordes (cornicione).',
-  ),
+const _transacciones = [
+  _Tx(titulo: 'Salario mensual', categoria: 'Ingresos', monto: 18500, esIngreso: true, fecha: 'Hoy', icono: Icons.work_outline_rounded),
+  _Tx(titulo: 'Supermercado Walmart', categoria: 'Alimentación', monto: 1240, esIngreso: false, fecha: 'Hoy', icono: Icons.shopping_cart_outlined),
+  _Tx(titulo: 'Netflix', categoria: 'Entretenimiento', monto: 219, esIngreso: false, fecha: 'Ayer', icono: Icons.play_circle_outline_rounded),
+  _Tx(titulo: 'Freelance diseño', categoria: 'Ingresos', monto: 4500, esIngreso: true, fecha: 'Lun', icono: Icons.brush_outlined),
+  _Tx(titulo: 'Gasolina', categoria: 'Transporte', monto: 800, esIngreso: false, fecha: 'Lun', icono: Icons.local_gas_station_outlined),
+  _Tx(titulo: 'Restaurante', categoria: 'Alimentación', monto: 560, esIngreso: false, fecha: 'Dom', icono: Icons.restaurant_outlined),
+  _Tx(titulo: 'Spotify', categoria: 'Entretenimiento', monto: 99, esIngreso: false, fecha: 'Sáb', icono: Icons.music_note_outlined),
 ];
 
 // ─── HomePage ─────────────────────────────────────────────────────────────────
@@ -105,6 +43,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
+  // Índice de la tarjeta expandida. null = ninguna.
   int? _expandedIndex;
 
   @override
@@ -112,43 +51,58 @@ class _HomePageState extends ConsumerState<HomePage> {
     final auth = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: PizzaColors.backgroundCrema,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // El Header ahora lleva el timer integrado elegantemente
-            _buildHeader(auth),
-            _buildOvenStatusCard(),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 24, 20, 12),
-              child: Text(
-                'Nuestra Enciclopedia Pizzera',
-                style: TextStyle(
-                  color: PizzaColors.textDark,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          // ── Contenido principal ──────────────────────────────────────────
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(auth),
+                _buildBalanceCard(),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  child: Text(
+                    'Movimientos recientes',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _transacciones.length,
+                    itemBuilder: (_, i) =>
+                        _buildTxCard(i, _transacciones[i]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Timer discreto en esquina inferior derecha ───────────────────
+          if (auth.timerActive)
+            Positioned(
+              right: 12,
+              bottom: 12,
+              child: _InactivityBadge(
+                remaining: auth.remainingSeconds,
+                total: kInactivitySeconds,
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _especialidades.length,
-                itemBuilder: (_, i) => _buildConceptCard(i, _especialidades[i]),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  // ── Header (Ahora con el Timer integrado arriba) ───────────────────────────
+  // ── Header ─────────────────────────────────────────────────────────────────
 
   Widget _buildHeader(AuthState auth) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+      padding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
       child: Row(
         children: [
           Expanded(
@@ -156,68 +110,45 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '¡Ciao, ${auth.user?.nombre.split(' ').first ?? 'Pizzero'}! 🍕',
+                  'Hola, ${auth.user?.nombre.split(' ').first ?? ''} 👋',
                   style: const TextStyle(
-                    color: PizzaColors.textSecondary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
                   ),
                 ),
                 const Text(
-                  'Bella Napoli',
+                  'Mis finanzas',
                   style: TextStyle(
-                    color: PizzaColors.primaryRed,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Serif',
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-
-          // 💡 NUEVA UBICACIÓN: El Badge de tiempo ahora aparece aquí de forma sutil
-          if (auth.timerActive) ...[
-            _InactivityBadge(
-              remaining: auth.remainingSeconds,
-              total: kInactivitySeconds,
-            ),
-            const SizedBox(width: 8),
-          ],
-
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: () => ref.read(authProvider.notifier).logout(),
-              icon: const Icon(Icons.logout_rounded,
-                  color: PizzaColors.primaryRed, size: 20),
-              tooltip: 'Salir de la cocina',
-            ),
+          IconButton(
+            onPressed: () => ref.read(authProvider.notifier).logout(),
+            icon: const Icon(Icons.logout_rounded,
+                color: AppColors.textSecondary, size: 20),
+            tooltip: 'Cerrar sesión',
           ),
         ],
       ),
     );
   }
 
-  // ── Tarjeta de Estado de la Cocina / Horno ─────────────────────────────────
+  // ── Tarjeta de balance ─────────────────────────────────────────────────────
 
-  Widget _buildOvenStatusCard() {
+  Widget _buildBalanceCard() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: PizzaColors.textDark.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          )
-        ],
+        color: AppColors.accent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border:
+        Border.all(color: AppColors.accent.withOpacity(0.2), width: 1.5),
       ),
       child: Row(
         children: [
@@ -225,30 +156,18 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Estado del Horno de Piedra',
+                const Text('Balance total',
                     style: TextStyle(
-                        color: PizzaColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '450°C Óptimo',
-                      style: TextStyle(
-                        color: PizzaColors.textDark,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
+                        color: AppColors.textSecondary, fontSize: 13)),
+                const SizedBox(height: 4),
+                const Text(
+                  '\$20,082',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ],
             ),
@@ -256,9 +175,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _miniStat('Artesanal', true),
+              _miniStat('+\$23,000', true),
               const SizedBox(height: 6),
-              _miniStat('Ingredientes 100% Frescos', false),
+              _miniStat('-\$2,918', false),
             ],
           ),
         ],
@@ -266,77 +185,79 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _miniStat(String label, bool isPrimary) {
-    final color = isPrimary ? PizzaColors.primaryRed : PizzaColors.accentOrange;
+  Widget _miniStat(String label, bool positive) {
+    final color = positive ? AppColors.accent : AppColors.error;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
           style: TextStyle(
-              color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+              color: color, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 
-  // ── Tarjeta de Especialidad Expandible ──────────────────────────────────────
+  // ── Tarjeta de transacción expandible ──────────────────────────────────────
 
-  Widget _buildConceptCard(int index, _ConceptoPizza especialidad) {
+  Widget _buildTxCard(int index, _Tx tx) {
     final isExpanded = _expandedIndex == index;
 
     return GestureDetector(
-      onTap: () => setState(() => _expandedIndex = isExpanded ? null : index),
+      onTap: () => setState(
+              () => _expandedIndex = isExpanded ? null : index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.all(isExpanded ? 16 : 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: isExpanded
+              ? AppColors.surfaceVariant
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isExpanded
-                ? PizzaColors.primaryRed.withOpacity(0.3)
-                : Colors.transparent,
+                ? (tx.esIngreso
+                ? AppColors.accent.withOpacity(0.3)
+                : AppColors.error.withOpacity(0.2))
+                : const Color(0xFF1F1F1F),
             width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: PizzaColors.textDark.withOpacity(isExpanded ? 0.08 : 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Fila principal
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: PizzaColors.primaryRed.withOpacity(0.1),
-                    shape: BoxShape.circle,
+                    color: (tx.esIngreso ? AppColors.accent : AppColors.error)
+                        .withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(especialidad.icono,
-                      size: 22, color: PizzaColors.primaryRed),
+                  child: Icon(tx.icono,
+                      size: 18,
+                      color: tx.esIngreso
+                          ? AppColors.accent
+                          : AppColors.error),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(especialidad.titulo,
+                      Text(tx.titulo,
                           style: const TextStyle(
-                              color: PizzaColors.textDark,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold)),
-                      Text(especialidad.categoria,
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500)),
+                      Text(tx.categoria,
                           style: const TextStyle(
-                              color: PizzaColors.textSecondary,
+                              color: AppColors.textSecondary,
                               fontSize: 12)),
                     ],
                   ),
@@ -345,48 +266,48 @@ class _HomePageState extends ConsumerState<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '⭐ ${especialidad.popularidad}%',
-                      style: const TextStyle(
-                        color: PizzaColors.accentOrange,
+                      '${tx.esIngreso ? '+' : '-'}\$${tx.monto.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        color: tx.esIngreso
+                            ? AppColors.accent
+                            : AppColors.error,
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Text('Pedidos', style: TextStyle(fontSize: 10, color: PizzaColors.textSecondary))
+                    Text(tx.fecha,
+                        style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11)),
                   ],
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Icon(
                   isExpanded
                       ? Icons.keyboard_arrow_up_rounded
                       : Icons.keyboard_arrow_down_rounded,
-                  color: PizzaColors.textSecondary,
-                  size: 20,
+                  color: AppColors.textSecondary,
+                  size: 18,
                 ),
               ],
             ),
+            // Detalle expandible
             if (isExpanded) ...[
               const SizedBox(height: 14),
-              const Divider(color: Color(0xFFEEEEEE), height: 1),
-              const SizedBox(height: 14),
-              Text(
-                especialidad.descripcion,
-                style: const TextStyle(
-                  color: PizzaColors.textSecondary,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
+              const Divider(color: Color(0xFF2A2A2A), height: 1),
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _detailChip(
-                      especialidad.esPicante ? Icons.local_fire_department_rounded : Icons.restaurant_rounded,
-                      especialidad.esPicante ? 'Picante' : 'Suave',
-                      especialidad.esPicante ? Colors.red : PizzaColors.textSecondary
-                  ),
+                  _detailChip(Icons.category_outlined, tx.categoria),
                   const SizedBox(width: 8),
-                  _detailChip(Icons.schedule_rounded, especialidad.tiempoPreparacion, PizzaColors.textSecondary),
+                  _detailChip(Icons.calendar_today_outlined, tx.fecha),
+                  const SizedBox(width: 8),
+                  _detailChip(
+                    tx.esIngreso
+                        ? Icons.arrow_downward_rounded
+                        : Icons.arrow_upward_rounded,
+                    tx.esIngreso ? 'Ingreso' : 'Egreso',
+                  ),
                 ],
               ),
             ],
@@ -396,28 +317,29 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _detailChip(IconData icon, String label, Color textColor) {
+  Widget _detailChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: PizzaColors.backgroundCrema.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: textColor),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: AppColors.textSecondary),
+          const SizedBox(width: 5),
           Text(label,
-              style: TextStyle(
-                  color: textColor, fontSize: 11, fontWeight: FontWeight.w500)),
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 11)),
         ],
       ),
     );
   }
 }
 
-// ─── Badge de inactividad (Ahora rediseñado como un bonito Chip de barra superior) ───
+// ─── Badge de inactividad (discreto, esquina inferior derecha) ────────────────
 
 class _InactivityBadge extends StatelessWidget {
   final int remaining;
@@ -427,9 +349,9 @@ class _InactivityBadge extends StatelessWidget {
 
   Color get _color {
     final ratio = total > 0 ? remaining / total : 0.0;
-    if (ratio > 0.5) return Colors.green;
-    if (ratio > 0.2) return PizzaColors.accentOrange;
-    return PizzaColors.primaryRed;
+    if (ratio > 0.5) return AppColors.textSecondary;   // gris — no llamativo
+    if (ratio > 0.2) return AppColors.warning;
+    return AppColors.error;
   }
 
   @override
@@ -438,23 +360,23 @@ class _InactivityBadge extends StatelessWidget {
       opacity: 1.0,
       duration: const Duration(milliseconds: 300),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _color.withOpacity(0.4), width: 1.5),
+          color: AppColors.surfaceVariant.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _color.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_fire_department_outlined, size: 14, color: _color),
+            Icon(Icons.timer_outlined, size: 10, color: _color),
             const SizedBox(width: 4),
             Text(
               '${remaining}s',
               style: TextStyle(
-                color: PizzaColors.textDark,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+                color: _color,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),

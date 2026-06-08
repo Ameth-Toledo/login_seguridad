@@ -1,27 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-// Mantengo tus imports originales
 import '../providers/auth_provider.dart';
-// Nota: Asumiremos que AppColors tiene los colores antiguos,
-// pero definiremos unos locales aquí para la pizzería.
-// Si quieres usarlos globalmente, cámbialos en app_colors.dart
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../../../shared/widgets/custom_button.dart';
-
-// --- CONSTANTES DE ESTILO PARA LA PIZZERÍA ---
-// Puedes mover esto a app_colors.dart después
-class PizzaColors {
-  static const Color primaryRed = Color(0xFFD32F2F); // Rojo Pomodoro
-  static const Color accentOrange = Color(0xFFFFA000); // Queso/Horno
-  static const Color backgroundCrema = Color(0xFFFFF8E1); // Masa/Harina suave
-  static const Color textDark = Color(0xFF3E2723); // Marrón corteza oscuro
-  static const Color textSecondary = Color(0xFF795548);
-}
-
-// Supongamos que esta constante existe en tu código original, la defino aquí para que no de error
-const int kInactivitySeconds = 120;
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -45,9 +28,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
     super.initState();
     _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800), // Un poco más lento para suavidad
+      duration: const Duration(milliseconds: 600),
     )..forward();
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeInCubic);
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
   }
 
   @override
@@ -71,24 +54,23 @@ class _LoginPageState extends ConsumerState<LoginPage>
     final auth = ref.watch(authProvider);
     final isLoading = auth.status == AuthStatus.loading;
 
-    // Escuchador de Riverpod intacto
+    // Snackbar cuando la sesión se cierra por inactividad
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (prev?.status == AuthStatus.authenticated &&
           next.status == AuthStatus.unauthenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: PizzaColors.textDark, // Color más acorde
+            backgroundColor: AppColors.surfaceVariant,
             behavior: SnackBarBehavior.floating,
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
             content: const Row(
               children: [
-                Icon(Icons.timer_off_outlined,
-                    color: PizzaColors.accentOrange, size: 20),
+                Icon(Icons.lock_clock, color: AppColors.warning, size: 18),
                 SizedBox(width: 10),
                 Text(
-                  'Tu sesión horneada ha expirado',
-                  style: TextStyle(color: Colors.white),
+                  'Sesión cerrada por inactividad',
+                  style: TextStyle(color: AppColors.textPrimary),
                 ),
               ],
             ),
@@ -98,82 +80,38 @@ class _LoginPageState extends ConsumerState<LoginPage>
     });
 
     return Scaffold(
-      // 1. Fondo Crema suave
-      backgroundColor: PizzaColors.backgroundCrema,
+      backgroundColor: AppColors.background,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
-          // Stack para poner un detalle decorativo de fondo si quisieras
           child: SingleChildScrollView(
-            // Un padding más estético
-            padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center, // Centrado
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 2. Cabecera Pizzería
-                  _buildPizzaHeader(),
-                  const SizedBox(height: 30),
-
-                  // 3. Contenedor Blanco (Card) para el formulario
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(28), // Muy redondeado
-                      boxShadow: [
-                        BoxShadow(
-                          color: PizzaColors.textDark.withOpacity(0.08),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Ingresa tus datos",
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: PizzaColors.textDark),
-                        ),
-                        const SizedBox(height: 25),
-                        // 4. Campos (reutilizando tus widgets)
-                        _buildFields(),
-                        const SizedBox(height: 16),
-                        _buildInactivityNote(),
-                        const SizedBox(height: 30),
-
-                        if (auth.errorMessage != null) ...[
-                          _buildError(auth.errorMessage!),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // 5. Botón Principal (Rojo Pomodoro)
-                        SizedBox(
-                          width: double.infinity,
-                          height: 55,
-                          child: CustomButton(
-                            label: '¡A pedir pizza!',
-                            isLoading: isLoading,
-                            onPressed: _submit,
-                            // Aquí asumo que tu CustomButton permite cambiar el color.
-                            // Si no, tendrás que editar CustomButton o envolverlo.
-                            // color: PizzaColors.primaryRed,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildRegisterLink(context),
-                      ],
-                    ),
+                  const SizedBox(height: 64),
+                  _buildHeader(),
+                  const SizedBox(height: 48),
+                  _buildFields(),
+                  const SizedBox(height: 12),
+                  _buildInactivityNote(),
+                  const SizedBox(height: 28),
+                  if (auth.errorMessage != null) ...[
+                    _buildError(auth.errorMessage!),
+                    const SizedBox(height: 16),
+                  ],
+                  CustomButton(
+                    label: 'Iniciar sesión',
+                    isLoading: isLoading,
+                    onPressed: _submit,
                   ),
-
-                  const SizedBox(height: 40),
-                  // La nota de seguridad la hacemos MUY sutil al final
-                  _buildSecurityNoteVisual(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  _buildRegisterLink(context),
+                  const SizedBox(height: 32),
+                  _buildSecurityNote(),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -183,88 +121,74 @@ class _LoginPageState extends ConsumerState<LoginPage>
     );
   }
 
-  // --- WIDGETS DE LA INTERFAZ REDISEÑADOS ---
-
-  Widget _buildPizzaHeader() {
+  Widget _buildHeader() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Icono grande y bonito
         Container(
-          padding: const EdgeInsets.all(16),
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: PizzaColors.primaryRed.withOpacity(0.15),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5))
-            ],
+            color: AppColors.accent.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: AppColors.accent.withOpacity(0.3), width: 1.5),
           ),
-          child: const Icon(
-            Icons.local_pizza_rounded, // Icono de Pizza!
-            color: PizzaColors.primaryRed,
-            size: 60,
+          child: const Icon(Icons.account_balance_wallet_outlined,
+              color: AppColors.accent, size: 26),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'GastosIO',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 6),
         const Text(
-          'Bella Napoli', // Nombre de ejemplo de la pizzería
-          style: TextStyle(
-            color: PizzaColors.primaryRed,
-            fontSize: 36,
-            fontWeight: FontWeight.w900, // Muy negrita
-            fontFamily: 'Serif', // O una fuente manuscrita si tienes
-            letterSpacing: -1,
-          ),
-        ),
-        const Text(
-          'El sabor de Italia en tu puerta',
-          style: TextStyle(
-            color: PizzaColors.textSecondary,
-            fontSize: 16,
-            fontStyle: FontStyle.italic,
-          ),
+          'Inicia sesión para continuar',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
         ),
       ],
     );
   }
 
   Widget _buildFields() {
-    // Definimos un estilo común para los inputs si tus CustomTextField lo permiten
     return Column(
       children: [
         CustomTextField(
           controller: _emailCtrl,
-          label: 'Tu correo pizzero',
+          label: 'Correo electrónico',
           keyboardType: TextInputType.emailAddress,
-          // Cambié iconos a outlines más finos
-          prefixIcon: const Icon(Icons.alternate_email_rounded,
-              color: PizzaColors.textSecondary),
+          prefixIcon: const Icon(Icons.mail_outline_rounded),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Dinos tu correo para el pedido';
-            if (!v.contains('@')) return 'Ese correo no parece correcto';
+            if (v == null || v.isEmpty) return 'Ingresa tu correo';
+            if (!v.contains('@')) return 'Correo inválido';
             return null;
           },
         ),
-        const SizedBox(height: 20), // Un poco más de espacio
+        const SizedBox(height: 16),
         CustomTextField(
           controller: _passwordCtrl,
-          label: 'Contraseña secreta',
+          label: 'Contraseña',
           obscureText: _obscure,
-          prefixIcon: const Icon(Icons.lock_open_rounded,
-              color: PizzaColors.textSecondary),
+          prefixIcon: const Icon(Icons.lock_outline_rounded),
           suffixIcon: IconButton(
             icon: Icon(
-              _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: PizzaColors.textSecondary.withOpacity(0.5),
-              size: 22,
+              _obscure
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: AppColors.textSecondary,
+              size: 20,
             ),
             onPressed: () => setState(() => _obscure = !_obscure),
           ),
           validator: (v) {
-            if (v == null || v.isEmpty) return 'Necesitamos tu contraseña';
-            if (v.length < 6) return 'Debe tener al menos 6 "ingredientes" (caracteres)';
+            if (v == null || v.isEmpty) return 'Ingresa tu contraseña';
+            if (v.length < 6) return 'Mínimo 6 caracteres';
             return null;
           },
         ),
@@ -273,23 +197,17 @@ class _LoginPageState extends ConsumerState<LoginPage>
   }
 
   Widget _buildInactivityNote() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.av_timer_rounded,
-              size: 14, color: PizzaColors.textSecondary.withOpacity(0.6)),
-          const SizedBox(width: 4),
-          Text(
-            'La sesión se enfría en ${kInactivitySeconds}s',
-            style: TextStyle(
-                color: PizzaColors.textSecondary.withOpacity(0.6),
-                fontSize: 12,
-                fontStyle: FontStyle.italic),
-          ),
-        ],
-      ),
+    return Row(
+      children: [
+        const Icon(Icons.timer_outlined,
+            size: 13, color: AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Text(
+          'Cierre automático tras ${kInactivitySeconds}s de inactividad',
+          style:
+          const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+      ],
     );
   }
 
@@ -297,21 +215,18 @@ class _LoginPageState extends ConsumerState<LoginPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: PizzaColors.primaryRed.withOpacity(0.05),
+        color: AppColors.error.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: PizzaColors.primaryRed.withOpacity(0.2)),
+        border: Border.all(color: AppColors.error.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.sentiment_very_dissatisfied,
-              color: PizzaColors.primaryRed, size: 20),
-          const SizedBox(width: 12),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(message,
-                style: const TextStyle(
-                    color: PizzaColors.primaryRed,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500)),
+                style:
+                const TextStyle(color: AppColors.error, fontSize: 13)),
           ),
         ],
       ),
@@ -319,48 +234,54 @@ class _LoginPageState extends ConsumerState<LoginPage>
   }
 
   Widget _buildRegisterLink(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          '¿Nuevo en la pizzería?',
-          style: TextStyle(color: PizzaColors.textSecondary, fontSize: 14),
-        ),
-        TextButton(
-          onPressed: () => context.push('/register'),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            '¿No tienes cuenta?',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
-          child: const Text(
-            'Crea tu cuenta',
-            style: TextStyle(
-              color: PizzaColors.primaryRed,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          TextButton(
+            onPressed: () => context.push('/register'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Regístrate',
+              style: TextStyle(
+                color: AppColors.accent,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // Rediseño visual de la nota de seguridad (menos técnica, más sutil)
-  Widget _buildSecurityNoteVisual() {
-    return Opacity(
-      opacity: 0.5, // Muy sutil
-      child: Column(
+  Widget _buildSecurityNote() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.verified_user_outlined,
-              size: 18, color: PizzaColors.textSecondary),
-          const SizedBox(height: 6),
-          Text(
-            'Tus datos están seguros con nosotros.\nUsamos encriptación de grado horno artesanal (AES-256).',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: PizzaColors.textSecondary,
-                fontSize: 11,
-                fontStyle: FontStyle.italic),
+          Icon(Icons.shield_outlined, size: 15, color: AppColors.accent),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Tu token y tiempo de sesión se guardan en almacén encriptado (AES-256 / Keystore).',
+              style: TextStyle(
+                  color: AppColors.textSecondary, fontSize: 11.5),
+            ),
           ),
         ],
       ),
