@@ -2,35 +2,94 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../../../../shared/theme/app_colors.dart';
+import 'dart:ui'; // Para FontFeature
 
-// ─── Datos simulados ──────────────────────────────────────────────────────────
+// ─── Datos simulados de Seguridad de la Información ──────────────────────────
 
-class _Tx {
+class _ConceptoSec {
   final String titulo;
-  final String categoria;
-  final double monto;
-  final bool esIngreso;
-  final String fecha;
+  final String dominio;
+  final int impacto; // Nivel del 1 al 100
+  final bool esDefensa; // true = Defensa (bueno), false = Amenaza (malo)
+  final String criticidad;
   final IconData icono;
+  final String descripcion;
 
-  const _Tx({
+  const _ConceptoSec({
     required this.titulo,
-    required this.categoria,
-    required this.monto,
-    required this.esIngreso,
-    required this.fecha,
+    required this.dominio,
+    required this.impacto,
+    required this.esDefensa,
+    required this.criticidad,
     required this.icono,
+    required this.descripcion,
   });
 }
 
-const _transacciones = [
-  _Tx(titulo: 'Salario mensual', categoria: 'Ingresos', monto: 18500, esIngreso: true, fecha: 'Hoy', icono: Icons.work_outline_rounded),
-  _Tx(titulo: 'Supermercado Walmart', categoria: 'Alimentación', monto: 1240, esIngreso: false, fecha: 'Hoy', icono: Icons.shopping_cart_outlined),
-  _Tx(titulo: 'Netflix', categoria: 'Entretenimiento', monto: 219, esIngreso: false, fecha: 'Ayer', icono: Icons.play_circle_outline_rounded),
-  _Tx(titulo: 'Freelance diseño', categoria: 'Ingresos', monto: 4500, esIngreso: true, fecha: 'Lun', icono: Icons.brush_outlined),
-  _Tx(titulo: 'Gasolina', categoria: 'Transporte', monto: 800, esIngreso: false, fecha: 'Lun', icono: Icons.local_gas_station_outlined),
-  _Tx(titulo: 'Restaurante', categoria: 'Alimentación', monto: 560, esIngreso: false, fecha: 'Dom', icono: Icons.restaurant_outlined),
-  _Tx(titulo: 'Spotify', categoria: 'Entretenimiento', monto: 99, esIngreso: false, fecha: 'Sáb', icono: Icons.music_note_outlined),
+const _conceptos = [
+  _ConceptoSec(
+    titulo: 'Phishing',
+    dominio: 'Ingeniería Social',
+    impacto: 95,
+    esDefensa: false,
+    criticidad: 'Crítica',
+    icono: Icons.phishing_rounded,
+    descripcion: 'Técnica de engaño donde un atacante se hace pasar por una entidad de confianza para robar credenciales o datos sensibles.',
+  ),
+  _ConceptoSec(
+    titulo: 'Autenticación Multifactor (MFA)',
+    dominio: 'Control de Acceso',
+    impacto: 90,
+    esDefensa: true,
+    criticidad: 'Alta',
+    icono: Icons.vpn_key_outlined,
+    descripcion: 'Mecanismo de seguridad que requiere dos o más métodos de verificación para acceder a un sistema, aplicación o cuenta.',
+  ),
+  _ConceptoSec(
+    titulo: 'Ransomware',
+    dominio: 'Malware',
+    impacto: 99,
+    esDefensa: false,
+    criticidad: 'Crítica',
+    icono: Icons.lock_clock_outlined,
+    descripcion: 'Software malicioso que cifra los archivos de la víctima y exige el pago de un rescate para restaurar el acceso.',
+  ),
+  _ConceptoSec(
+    titulo: 'Zero Trust',
+    dominio: 'Arquitectura',
+    impacto: 85,
+    esDefensa: true,
+    criticidad: 'Media',
+    icono: Icons.shield_outlined,
+    descripcion: 'Modelo de seguridad que asume que ninguna entidad, interna o externa, es confiable por defecto. Todo debe ser verificado.',
+  ),
+  _ConceptoSec(
+    titulo: 'Ataque DDoS',
+    dominio: 'Redes',
+    impacto: 75,
+    esDefensa: false,
+    criticidad: 'Alta',
+    icono: Icons.wifi_tethering_error_rounded,
+    descripcion: 'Ataque de Denegación de Servicio Distribuido. Inunda un servidor con tráfico masivo para hacerlo inaccesible a los usuarios.',
+  ),
+  _ConceptoSec(
+    titulo: 'Cifrado de Extremo a Extremo',
+    dominio: 'Criptografía',
+    impacto: 80,
+    esDefensa: true,
+    criticidad: 'Alta',
+    icono: Icons.enhanced_encryption_outlined,
+    descripcion: 'Método de comunicación donde solo los usuarios que se comunican pueden leer los mensajes. Previene la interceptación.',
+  ),
+  _ConceptoSec(
+    titulo: 'Inyección SQL',
+    dominio: 'Vulnerabilidades Web',
+    impacto: 88,
+    esDefensa: false,
+    criticidad: 'Alta',
+    icono: Icons.bug_report_outlined,
+    descripcion: 'Vulnerabilidad que permite a un atacante interferir en las consultas que hace una aplicación a su base de datos.',
+  ),
 ];
 
 // ─── HomePage ─────────────────────────────────────────────────────────────────
@@ -60,11 +119,11 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(auth),
-                _buildBalanceCard(),
+                _buildSecurityScoreCard(),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
                   child: Text(
-                    'Movimientos recientes',
+                    'Glosario de Conceptos',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 15,
@@ -75,9 +134,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _transacciones.length,
+                    itemCount: _conceptos.length,
                     itemBuilder: (_, i) =>
-                        _buildTxCard(i, _transacciones[i]),
+                        _buildConceptCard(i, _conceptos[i]),
                   ),
                 ),
               ],
@@ -110,14 +169,14 @@ class _HomePageState extends ConsumerState<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hola, ${auth.user?.nombre.split(' ').first ?? ''} 👋',
+                  'Hola, ${auth.user?.nombre.split(' ').first ?? 'Usuario'} 🛡️',
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 14,
                   ),
                 ),
                 const Text(
-                  'Mis finanzas',
+                  'Panel de Seguridad',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 22,
@@ -138,9 +197,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ── Tarjeta de balance ─────────────────────────────────────────────────────
+  // ── Tarjeta de Estado de Seguridad ─────────────────────────────────────────
 
-  Widget _buildBalanceCard() {
+  Widget _buildSecurityScoreCard() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(20),
@@ -156,12 +215,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Balance total',
+                const Text('Índice de Salud de Red',
                     style: TextStyle(
                         color: AppColors.textSecondary, fontSize: 13)),
                 const SizedBox(height: 4),
                 const Text(
-                  '\$20,082',
+                  '82 / 100',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 28,
@@ -175,9 +234,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _miniStat('+\$23,000', true),
+              _miniStat('3 Defensas Activas', true),
               const SizedBox(height: 6),
-              _miniStat('-\$2,918', false),
+              _miniStat('4 Amenazas Vistas', false),
             ],
           ),
         ],
@@ -185,8 +244,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _miniStat(String label, bool positive) {
-    final color = positive ? AppColors.accent : AppColors.error;
+  Widget _miniStat(String label, bool isGood) {
+    final color = isGood ? AppColors.accent : AppColors.error;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -199,9 +258,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ── Tarjeta de transacción expandible ──────────────────────────────────────
+  // ── Tarjeta de concepto expandible ─────────────────────────────────────────
 
-  Widget _buildTxCard(int index, _Tx tx) {
+  Widget _buildConceptCard(int index, _ConceptoSec concepto) {
     final isExpanded = _expandedIndex == index;
 
     return GestureDetector(
@@ -219,7 +278,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isExpanded
-                ? (tx.esIngreso
+                ? (concepto.esDefensa
                 ? AppColors.accent.withOpacity(0.3)
                 : AppColors.error.withOpacity(0.2))
                 : const Color(0xFF1F1F1F),
@@ -227,21 +286,22 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Fila principal
+            // Fila principal visible siempre
             Row(
               children: [
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: (tx.esIngreso ? AppColors.accent : AppColors.error)
+                    color: (concepto.esDefensa ? AppColors.accent : AppColors.error)
                         .withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(tx.icono,
+                  child: Icon(concepto.icono,
                       size: 18,
-                      color: tx.esIngreso
+                      color: concepto.esDefensa
                           ? AppColors.accent
                           : AppColors.error),
                 ),
@@ -250,12 +310,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tx.titulo,
+                      Text(concepto.titulo,
                           style: const TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.w500)),
-                      Text(tx.categoria,
+                      Text(concepto.dominio,
                           style: const TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 12)),
@@ -266,19 +326,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${tx.esIngreso ? '+' : '-'}\$${tx.monto.toStringAsFixed(0)}',
+                      'Impacto: ${concepto.impacto}',
                       style: TextStyle(
-                        color: tx.esIngreso
+                        color: concepto.esDefensa
                             ? AppColors.accent
                             : AppColors.error,
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(tx.fecha,
-                        style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11)),
                   ],
                 ),
                 const SizedBox(width: 8),
@@ -291,23 +347,28 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
-            // Detalle expandible
+            // Detalle expandible (Definición y etiquetas)
             if (isExpanded) ...[
               const SizedBox(height: 14),
               const Divider(color: Color(0xFF2A2A2A), height: 1),
               const SizedBox(height: 14),
+              Text(
+                concepto.descripcion,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
-                  _detailChip(Icons.category_outlined, tx.categoria),
-                  const SizedBox(width: 8),
-                  _detailChip(Icons.calendar_today_outlined, tx.fecha),
-                  const SizedBox(width: 8),
                   _detailChip(
-                    tx.esIngreso
-                        ? Icons.arrow_downward_rounded
-                        : Icons.arrow_upward_rounded,
-                    tx.esIngreso ? 'Ingreso' : 'Egreso',
+                      concepto.esDefensa ? Icons.verified_user_outlined : Icons.warning_amber_rounded,
+                      concepto.esDefensa ? 'Defensa' : 'Amenaza'
                   ),
+                  const SizedBox(width: 8),
+                  _detailChip(Icons.speed_rounded, 'Severidad: ${concepto.criticidad}'),
                 ],
               ),
             ],
@@ -349,7 +410,7 @@ class _InactivityBadge extends StatelessWidget {
 
   Color get _color {
     final ratio = total > 0 ? remaining / total : 0.0;
-    if (ratio > 0.5) return AppColors.textSecondary;   // gris — no llamativo
+    if (ratio > 0.5) return AppColors.textSecondary;
     if (ratio > 0.2) return AppColors.warning;
     return AppColors.error;
   }

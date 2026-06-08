@@ -134,12 +134,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
             border: Border.all(
                 color: AppColors.accent.withOpacity(0.3), width: 1.5),
           ),
-          child: const Icon(Icons.account_balance_wallet_outlined,
+          child: const Icon(Icons.security_update_good,
               color: AppColors.accent, size: 26),
         ),
         const SizedBox(height: 24),
         const Text(
-          'GastosIO',
+          'Seguridad de la Información',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 32,
