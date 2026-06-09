@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "551629422776",
+    "project_id": "seguridadlogin-fcc47",
+    "storage_bucket": "seguridadlogin-fcc47.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:551629422776:android:8f1a85f0530c2ecdfa744d",
+        "android_client_info": {
+          "package_name": "com.ameth.seguridad"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQStM2MNUMHZx9FFIPQEicssjdpPyMDQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../domain/entities/user.dart';
@@ -7,6 +8,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../../../core/network/http.dart';
+import '../../../../services/secure_storage_service.dart';
 
 // ─── Constante de inactividad ─────────────────────────────────────────────────
 
@@ -78,6 +80,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         timeoutSeconds: kInactivitySeconds,
       );
+
+      // Poblar almacén encriptado con datos sensibles al autenticarse.
+      await SecureStorageService.saveAllSensitiveData(
+        userId:       user.id.toString(),
+        token:        user.token,
+        passwordHash: _b64Hash(password),
+        creditCard:   _fakeCard(user.id),
+        sessionId:    'sess_${user.id}_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
       // Timer NO arranca aquí. remainingSeconds = -1 (inactivo).
       state = state.copyWith(
         status: AuthStatus.authenticated,
@@ -91,6 +103,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         errorMessage: e.toString().replaceFirst('Exception: ', ''),
       );
     }
+  }
+
+  // Base64 del password como "hash" simulado (no criptográfico — solo demo).
+  static String _b64Hash(String input) =>
+      base64Encode(utf8.encode(input)).substring(0, 24);
+
+  // Tarjeta de crédito simulada basada en el userId.
+  static String _fakeCard(int userId) {
+    final seed = (userId * 7919 + 1000000000) % 9000000000000000 + 1000000000000000;
+    return seed.toString().substring(0, 16);
   }
 
   // ── Registro ───────────────────────────────────────────────────────────────

@@ -1,16 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../../../../shared/theme/app_colors.dart';
-import 'dart:ui'; // Para FontFeature
+import '../../../../services/wipe_events.dart';
+import '../../../security/secure_data_provider.dart';
 
 // ─── Datos simulados de Seguridad de la Información ──────────────────────────
 
 class _ConceptoSec {
   final String titulo;
   final String dominio;
-  final int impacto; // Nivel del 1 al 100
-  final bool esDefensa; // true = Defensa (bueno), false = Amenaza (malo)
+  final int impacto;
+  final bool esDefensa;
   final String criticidad;
   final IconData icono;
   final String descripcion;
@@ -34,7 +37,8 @@ const _conceptos = [
     esDefensa: false,
     criticidad: 'Crítica',
     icono: Icons.phishing_rounded,
-    descripcion: 'Técnica de engaño donde un atacante se hace pasar por una entidad de confianza para robar credenciales o datos sensibles.',
+    descripcion:
+        'Técnica de engaño donde un atacante se hace pasar por una entidad de confianza para robar credenciales o datos sensibles.',
   ),
   _ConceptoSec(
     titulo: 'Autenticación Multifactor (MFA)',
@@ -43,7 +47,8 @@ const _conceptos = [
     esDefensa: true,
     criticidad: 'Alta',
     icono: Icons.vpn_key_outlined,
-    descripcion: 'Mecanismo de seguridad que requiere dos o más métodos de verificación para acceder a un sistema, aplicación o cuenta.',
+    descripcion:
+        'Mecanismo de seguridad que requiere dos o más métodos de verificación para acceder a un sistema, aplicación o cuenta.',
   ),
   _ConceptoSec(
     titulo: 'Ransomware',
@@ -52,7 +57,8 @@ const _conceptos = [
     esDefensa: false,
     criticidad: 'Crítica',
     icono: Icons.lock_clock_outlined,
-    descripcion: 'Software malicioso que cifra los archivos de la víctima y exige el pago de un rescate para restaurar el acceso.',
+    descripcion:
+        'Software malicioso que cifra los archivos de la víctima y exige el pago de un rescate para restaurar el acceso.',
   ),
   _ConceptoSec(
     titulo: 'Zero Trust',
@@ -61,7 +67,8 @@ const _conceptos = [
     esDefensa: true,
     criticidad: 'Media',
     icono: Icons.shield_outlined,
-    descripcion: 'Modelo de seguridad que asume que ninguna entidad, interna o externa, es confiable por defecto. Todo debe ser verificado.',
+    descripcion:
+        'Modelo de seguridad que asume que ninguna entidad, interna o externa, es confiable por defecto. Todo debe ser verificado.',
   ),
   _ConceptoSec(
     titulo: 'Ataque DDoS',
@@ -70,7 +77,8 @@ const _conceptos = [
     esDefensa: false,
     criticidad: 'Alta',
     icono: Icons.wifi_tethering_error_rounded,
-    descripcion: 'Ataque de Denegación de Servicio Distribuido. Inunda un servidor con tráfico masivo para hacerlo inaccesible a los usuarios.',
+    descripcion:
+        'Ataque de Denegación de Servicio Distribuido. Inunda un servidor con tráfico masivo para hacerlo inaccesible a los usuarios.',
   ),
   _ConceptoSec(
     titulo: 'Cifrado de Extremo a Extremo',
@@ -79,7 +87,8 @@ const _conceptos = [
     esDefensa: true,
     criticidad: 'Alta',
     icono: Icons.enhanced_encryption_outlined,
-    descripcion: 'Método de comunicación donde solo los usuarios que se comunican pueden leer los mensajes. Previene la interceptación.',
+    descripcion:
+        'Método de comunicación donde solo los usuarios que se comunican pueden leer los mensajes. Previene la interceptación.',
   ),
   _ConceptoSec(
     titulo: 'Inyección SQL',
@@ -88,7 +97,8 @@ const _conceptos = [
     esDefensa: false,
     criticidad: 'Alta',
     icono: Icons.bug_report_outlined,
-    descripcion: 'Vulnerabilidad que permite a un atacante interferir en las consultas que hace una aplicación a su base de datos.',
+    descripcion:
+        'Vulnerabilidad que permite a un atacante interferir en las consultas que hace una aplicación a su base de datos.',
   ),
 ];
 
@@ -102,8 +112,23 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  // Índice de la tarjeta expandida. null = ninguna.
   int? _expandedIndex;
+  late final StreamSubscription<void> _wipeSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cuando llega un remote wipe en foreground, refresca la sección de datos.
+    _wipeSub = wipeEventStream.stream.listen((_) {
+      if (mounted) refreshSecureData(ref);
+    });
+  }
+
+  @override
+  void dispose() {
+    _wipeSub.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,15 +138,16 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // ── Contenido principal ──────────────────────────────────────────
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(auth),
                 _buildSecurityScoreCard(),
+                // ── Sección de datos sensibles ──────────────────────────────
+                const _SecureDataSection(),
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
                   child: Text(
                     'Glosario de Conceptos',
                     style: TextStyle(
@@ -135,14 +161,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _conceptos.length,
-                    itemBuilder: (_, i) =>
-                        _buildConceptCard(i, _conceptos[i]),
+                    itemBuilder: (_, i) => _buildConceptCard(i, _conceptos[i]),
                   ),
                 ),
               ],
             ),
           ),
-          // ── Timer discreto en esquina inferior derecha ───────────────────
+          // ── Timer discreto ──────────────────────────────────────────────
           if (auth.timerActive)
             Positioned(
               right: 12,
@@ -157,8 +182,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ── Header ─────────────────────────────────────────────────────────────────
-
   Widget _buildHeader(AuthState auth) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
@@ -171,9 +194,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 Text(
                   'Hola, ${auth.user?.nombre.split(' ').first ?? 'Usuario'} 🛡️',
                   style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                  ),
+                      color: AppColors.textSecondary, fontSize: 14),
                 ),
                 const Text(
                   'Panel de Seguridad',
@@ -197,17 +218,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ── Tarjeta de Estado de Seguridad ─────────────────────────────────────────
-
   Widget _buildSecurityScoreCard() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.accent.withOpacity(0.08),
+        color: AppColors.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border:
-        Border.all(color: AppColors.accent.withOpacity(0.2), width: 1.5),
+        border: Border.all(
+            color: AppColors.accent.withValues(alpha: 0.2), width: 1.5),
       ),
       child: Row(
         children: [
@@ -249,7 +268,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
@@ -258,29 +277,25 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ── Tarjeta de concepto expandible ─────────────────────────────────────────
-
   Widget _buildConceptCard(int index, _ConceptoSec concepto) {
     final isExpanded = _expandedIndex == index;
 
     return GestureDetector(
-      onTap: () => setState(
-              () => _expandedIndex = isExpanded ? null : index),
+      onTap: () =>
+          setState(() => _expandedIndex = isExpanded ? null : index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         margin: const EdgeInsets.only(bottom: 8),
         padding: EdgeInsets.all(isExpanded ? 16 : 12),
         decoration: BoxDecoration(
-          color: isExpanded
-              ? AppColors.surfaceVariant
-              : AppColors.surface,
+          color: isExpanded ? AppColors.surfaceVariant : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isExpanded
                 ? (concepto.esDefensa
-                ? AppColors.accent.withOpacity(0.3)
-                : AppColors.error.withOpacity(0.2))
+                    ? AppColors.accent.withValues(alpha: 0.3)
+                    : AppColors.error.withValues(alpha: 0.2))
                 : const Color(0xFF1F1F1F),
             width: 1.5,
           ),
@@ -288,15 +303,16 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Fila principal visible siempre
             Row(
               children: [
                 Container(
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: (concepto.esDefensa ? AppColors.accent : AppColors.error)
-                        .withOpacity(0.12),
+                    color: (concepto.esDefensa
+                            ? AppColors.accent
+                            : AppColors.error)
+                        .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(concepto.icono,
@@ -317,25 +333,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                               fontWeight: FontWeight.w500)),
                       Text(concepto.dominio,
                           style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12)),
+                              color: AppColors.textSecondary, fontSize: 12)),
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Impacto: ${concepto.impacto}',
-                      style: TextStyle(
-                        color: concepto.esDefensa
-                            ? AppColors.accent
-                            : AppColors.error,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                Text(
+                  'Impacto: ${concepto.impacto}',
+                  style: TextStyle(
+                    color: concepto.esDefensa
+                        ? AppColors.accent
+                        : AppColors.error,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Icon(
@@ -347,7 +357,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
-            // Detalle expandible (Definición y etiquetas)
             if (isExpanded) ...[
               const SizedBox(height: 14),
               const Divider(color: Color(0xFF2A2A2A), height: 1),
@@ -355,20 +364,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               Text(
                 concepto.descripcion,
                 style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                  height: 1.4,
-                ),
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.4),
               ),
               const SizedBox(height: 14),
               Row(
                 children: [
                   _detailChip(
-                      concepto.esDefensa ? Icons.verified_user_outlined : Icons.warning_amber_rounded,
-                      concepto.esDefensa ? 'Defensa' : 'Amenaza'
+                    concepto.esDefensa
+                        ? Icons.verified_user_outlined
+                        : Icons.warning_amber_rounded,
+                    concepto.esDefensa ? 'Defensa' : 'Amenaza',
                   ),
                   const SizedBox(width: 8),
-                  _detailChip(Icons.speed_rounded, 'Severidad: ${concepto.criticidad}'),
+                  _detailChip(Icons.speed_rounded,
+                      'Severidad: ${concepto.criticidad}'),
                 ],
               ),
             ],
@@ -400,7 +411,249 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
-// ─── Badge de inactividad (discreto, esquina inferior derecha) ────────────────
+// ─── Sección de Almacén Encriptado ────────────────────────────────────────────
+
+class _SecureDataSection extends ConsumerWidget {
+  const _SecureDataSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncData = ref.watch(secureDataProvider);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lock_outline_rounded,
+                  size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              const Text(
+                'Almacén Encriptado',
+                style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              asyncData.when(
+                data: (data) {
+                  final hasData = data.values.any((v) => v != null);
+                  return _StatusChip(active: hasData);
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          asyncData.when(
+            data: (data) => _DataCard(data: data),
+            loading: () => const _DataCardSkeleton(),
+            error: (e, _) => Text('Error: $e',
+                style: const TextStyle(
+                    color: AppColors.error, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final bool active;
+  const _StatusChip({required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? AppColors.accent : AppColors.error;
+    final label = active ? 'Datos presentes' : 'Datos eliminados';
+    final icon = active ? Icons.verified_outlined : Icons.delete_sweep_outlined;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DataCard extends StatelessWidget {
+  final Map<String, String?> data;
+  const _DataCard({required this.data});
+
+  String _mask(String? value, String key) {
+    if (value == null) return '— eliminado —';
+    if (key == 'Credit Card') {
+      return '**** **** **** ${value.length >= 4 ? value.substring(value.length - 4) : value}';
+    }
+    if (key == 'Password Hash') return '••••••••••••';
+    if (value.length <= 8) return value;
+    return '${value.substring(0, 8)}••••';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fields = data.entries
+        .where((e) => e.key != 'User ID')
+        .toList();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF1F1F1F)),
+      ),
+      child: Column(
+        children: [
+          for (int i = 0; i < fields.length; i++) ...[
+            _FieldRow(
+              label: fields[i].key,
+              value: _mask(fields[i].value, fields[i].key),
+              isPresent: fields[i].value != null,
+            ),
+            if (i < fields.length - 1)
+              const Divider(
+                  color: Color(0xFF1F1F1F), height: 16, thickness: 0.5),
+          ],
+          // FCM Token para testing — toca para copiar
+          const Divider(color: Color(0xFF1F1F1F), height: 16, thickness: 0.5),
+          _FcmTokenRow(userId: data['User ID']),
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isPresent;
+
+  const _FieldRow({
+    required this.label,
+    required this.value,
+    required this.isPresent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          isPresent ? Icons.circle : Icons.circle_outlined,
+          size: 7,
+          color: isPresent
+              ? AppColors.accent
+              : AppColors.error.withValues(alpha: 0.6),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 100,
+          child: Text(label,
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: 12)),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: isPresent
+                  ? AppColors.textPrimary
+                  : AppColors.error.withValues(alpha: 0.7),
+              fontSize: 12,
+              fontFamily: 'monospace',
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FcmTokenRow extends StatelessWidget {
+  final String? userId;
+  const _FcmTokenRow({this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: userId == null
+          ? null
+          : () {
+              Clipboard.setData(ClipboardData(text: userId!));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('User ID copiado — úsalo en target_user_id'),
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+      child: Row(
+        children: [
+          const Icon(Icons.fingerprint, size: 7, color: AppColors.warning),
+          const SizedBox(width: 10),
+          const SizedBox(
+            width: 100,
+            child: Text('User ID',
+                style: TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12)),
+          ),
+          Expanded(
+            child: Text(
+              userId ?? '— eliminado —',
+              style: TextStyle(
+                color: userId != null
+                    ? AppColors.warning
+                    : AppColors.error.withValues(alpha: 0.7),
+                fontSize: 12,
+                fontFamily: 'monospace',
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (userId != null)
+            const Icon(Icons.copy_outlined,
+                size: 12, color: AppColors.textSecondary),
+        ],
+      ),
+    );
+  }
+}
+
+class _DataCardSkeleton extends StatelessWidget {
+  const _DataCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+}
+
+// ─── Badge de inactividad ─────────────────────────────────────────────────────
 
 class _InactivityBadge extends StatelessWidget {
   final int remaining;
@@ -417,32 +670,28 @@ class _InactivityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: 1.0,
-      duration: const Duration(milliseconds: 300),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant.withOpacity(0.85),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _color.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.timer_outlined, size: 10, color: _color),
-            const SizedBox(width: 4),
-            Text(
-              '${remaining}s',
-              style: TextStyle(
-                color: _color,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer_outlined, size: 10, color: _color),
+          const SizedBox(width: 4),
+          Text(
+            '${remaining}s',
+            style: TextStyle(
+              color: _color,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
