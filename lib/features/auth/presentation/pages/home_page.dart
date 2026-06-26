@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../services/wipe_events.dart';
+import '../../../../services/notification_service.dart';
 import '../../../security/secure_data_provider.dart';
 
 // ─── Datos simulados de Seguridad de la Información ──────────────────────────
@@ -38,7 +39,7 @@ const _conceptos = [
     criticidad: 'Crítica',
     icono: Icons.phishing_rounded,
     descripcion:
-        'Técnica de engaño donde un atacante se hace pasar por una entidad de confianza para robar credenciales o datos sensibles.',
+    'Técnica de engaño donde un atacante se hace pasar por una entidad de confianza para robar credenciales o datos sensibles.',
   ),
   _ConceptoSec(
     titulo: 'Autenticación Multifactor (MFA)',
@@ -48,7 +49,7 @@ const _conceptos = [
     criticidad: 'Alta',
     icono: Icons.vpn_key_outlined,
     descripcion:
-        'Mecanismo de seguridad que requiere dos o más métodos de verificación para acceder a un sistema, aplicación o cuenta.',
+    'Mecanismo de seguridad que requiere dos o más métodos de verificación para acceder a un sistema, aplicación o cuenta.',
   ),
   _ConceptoSec(
     titulo: 'Ransomware',
@@ -58,7 +59,7 @@ const _conceptos = [
     criticidad: 'Crítica',
     icono: Icons.lock_clock_outlined,
     descripcion:
-        'Software malicioso que cifra los archivos de la víctima y exige el pago de un rescate para restaurar el acceso.',
+    'Software malicioso que cifra los archivos de la víctima y exige el pago de un rescate para restaurar el acceso.',
   ),
   _ConceptoSec(
     titulo: 'Zero Trust',
@@ -68,7 +69,7 @@ const _conceptos = [
     criticidad: 'Media',
     icono: Icons.shield_outlined,
     descripcion:
-        'Modelo de seguridad que asume que ninguna entidad, interna o externa, es confiable por defecto. Todo debe ser verificado.',
+    'Modelo de seguridad que asume que ninguna entidad, interna o externa, es confiable por defecto. Todo debe ser verificado.',
   ),
   _ConceptoSec(
     titulo: 'Ataque DDoS',
@@ -78,7 +79,7 @@ const _conceptos = [
     criticidad: 'Alta',
     icono: Icons.wifi_tethering_error_rounded,
     descripcion:
-        'Ataque de Denegación de Servicio Distribuido. Inunda un servidor con tráfico masivo para hacerlo inaccesible a los usuarios.',
+    'Ataque de Denegación de Servicio Distribuido. Inunda un servidor con tráfico masivo para hacerlo inaccesible a los usuarios.',
   ),
   _ConceptoSec(
     titulo: 'Cifrado de Extremo a Extremo',
@@ -88,7 +89,7 @@ const _conceptos = [
     criticidad: 'Alta',
     icono: Icons.enhanced_encryption_outlined,
     descripcion:
-        'Método de comunicación donde solo los usuarios que se comunican pueden leer los mensajes. Previene la interceptación.',
+    'Método de comunicación donde solo los usuarios que se comunican pueden leer los mensajes. Previene la interceptación.',
   ),
   _ConceptoSec(
     titulo: 'Inyección SQL',
@@ -98,7 +99,7 @@ const _conceptos = [
     criticidad: 'Alta',
     icono: Icons.bug_report_outlined,
     descripcion:
-        'Vulnerabilidad que permite a un atacante interferir en las consultas que hace una aplicación a su base de datos.',
+    'Vulnerabilidad que permite a un atacante interferir en las consultas que hace una aplicación a su base de datos.',
   ),
 ];
 
@@ -118,7 +119,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Cuando llega un remote wipe en foreground, refresca la sección de datos.
     _wipeSub = wipeEventStream.stream.listen((_) {
       if (mounted) refreshSecureData(ref);
     });
@@ -266,14 +266,14 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _miniStat(String label, bool isGood) {
     final color = isGood ? AppColors.accent : AppColors.error;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(label,
-          style: TextStyle(
-              color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 12, fontWeight: FontWeight.w600))
     );
   }
 
@@ -294,8 +294,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           border: Border.all(
             color: isExpanded
                 ? (concepto.esDefensa
-                    ? AppColors.accent.withValues(alpha: 0.3)
-                    : AppColors.error.withValues(alpha: 0.2))
+                ? AppColors.accent.withValues(alpha: 0.3)
+                : AppColors.error.withValues(alpha: 0.2))
                 : const Color(0xFF1F1F1F),
             width: 1.5,
           ),
@@ -310,8 +310,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   height: 40,
                   decoration: BoxDecoration(
                     color: (concepto.esDefensa
-                            ? AppColors.accent
-                            : AppColors.error)
+                        ? AppColors.accent
+                        : AppColors.error)
                         .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -411,7 +411,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
-// ─── Sección de Almacén Encriptado ────────────────────────────────────────────
+// ─── Sección de Almacén Encriptado + Remote Wipe ────────────────────────────
 
 class _SecureDataSection extends ConsumerWidget {
   const _SecureDataSection();
@@ -450,7 +450,15 @@ class _SecureDataSection extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           asyncData.when(
-            data: (data) => _DataCard(data: data),
+            data: (data) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DataCard(data: data),
+                const SizedBox(height: 12),
+                // ── Sección de Remote Wipe ──────────────────────────────
+                const _RemoteWipeSection(),
+              ],
+            ),
             loading: () => const _DataCardSkeleton(),
             error: (e, _) => Text('Error: $e',
                 style: const TextStyle(
@@ -531,7 +539,6 @@ class _DataCard extends StatelessWidget {
               const Divider(
                   color: Color(0xFF1F1F1F), height: 16, thickness: 0.5),
           ],
-          // FCM Token para testing — toca para copiar
           const Divider(color: Color(0xFF1F1F1F), height: 16, thickness: 0.5),
           _FcmTokenRow(userId: data['User ID']),
         ],
@@ -597,15 +604,15 @@ class _FcmTokenRow extends StatelessWidget {
       onTap: userId == null
           ? null
           : () {
-              Clipboard.setData(ClipboardData(text: userId!));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('User ID copiado — úsalo en target_user_id'),
-                  duration: Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+        Clipboard.setData(ClipboardData(text: userId!));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User ID copiado — úsalo en target_user_id'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
       child: Row(
         children: [
           const Icon(Icons.fingerprint, size: 7, color: AppColors.warning),
@@ -648,6 +655,173 @@ class _DataCardSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+}
+
+// ─── Sección Remote Wipe ──────────────────────────────────────────────────────
+
+class _RemoteWipeSection extends ConsumerStatefulWidget {
+  const _RemoteWipeSection();
+
+  @override
+  ConsumerState<_RemoteWipeSection> createState() => _RemoteWipeSectionState();
+}
+
+class _RemoteWipeSectionState extends ConsumerState<_RemoteWipeSection> {
+  bool _isLoading = false;
+  String? _message;
+  bool _isSuccess = false;
+
+  void _clearMessage() {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _message = null);
+    });
+  }
+
+  Future<void> _requestRemoteWipe() async {
+    final auth = ref.read(authProvider);
+    if (auth.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No estás autenticado')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final notificationService = NotificationService();
+    final response = await notificationService.requestRemoteWipe(
+      userId: auth.user!.id.toString(),
+      authToken: auth.user!.token,
+      reason: 'Solicitud manual desde app mobile',
+    );
+
+    setState(() {
+      _isLoading = false;
+      _message = response.message;
+      _isSuccess = response.success;
+    });
+
+    _clearMessage();
+
+    if (response.success) {
+      // Opcional: mostrar SnackBar adicional
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              '🔔 Notificación FCM enviada — los datos se eliminarán cuando llegue',
+            ),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.accent,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.delete_forever_outlined,
+                  size: 14, color: AppColors.error),
+              const SizedBox(width: 8),
+              const Text(
+                'Eliminar datos remotamente',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Solicita que se eliminen todos los datos sensibles de este dispositivo mediante una notificación remota segura.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_message != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _isSuccess
+                    ? AppColors.accent.withValues(alpha: 0.12)
+                    : AppColors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isSuccess ? Icons.check_circle : Icons.error,
+                    size: 14,
+                    color: _isSuccess ? AppColors.accent : AppColors.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _message!,
+                      style: TextStyle(
+                        color: _isSuccess ? AppColors.accent : AppColors.error,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _requestRemoteWipe,
+              icon: _isLoading
+                  ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  valueColor: AlwaysStoppedAnimation(AppColors.error),
+                ),
+              )
+                  : const Icon(Icons.send_rounded, size: 14),
+              label: Text(
+                _isLoading ? 'Enviando...' : 'Solicitar Wipe Remoto',
+                style: const TextStyle(fontSize: 12),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

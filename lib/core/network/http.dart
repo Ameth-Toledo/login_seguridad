@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class HttpClient {
-  static const String _baseUrl = 'http://32.196.151.130:8000'; // Android emulator → localhost
+  static const String _baseUrl = 'http://192.168.3.59:8000'; // Android emulator → localhost
 
   final http.Client _client;
 

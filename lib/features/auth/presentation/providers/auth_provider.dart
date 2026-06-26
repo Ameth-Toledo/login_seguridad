@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../../../services/notification_service.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -90,6 +91,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
         sessionId:    'sess_${user.id}_${DateTime.now().millisecondsSinceEpoch}',
       );
 
+      // Registrar FCM token recién logueado
+      final fcmToken = await SecureStorageService.read(SecureStorageService.keyFcmToken);
+      if (fcmToken != null) {
+        await NotificationService().registerFcmToken(
+          authToken: user.token,
+          fcmToken: fcmToken,
+        );
+      }
+
       // Timer NO arranca aquí. remainingSeconds = -1 (inactivo).
       state = state.copyWith(
         status: AuthStatus.authenticated,
@@ -106,8 +116,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   // Base64 del password como "hash" simulado (no criptográfico — solo demo).
-  static String _b64Hash(String input) =>
-      base64Encode(utf8.encode(input)).substring(0, 24);
+  // Se limita la longitud de forma segura: si el Base64 resultante tiene
+  // menos de 24 caracteres (passwords cortos), se usa el string completo
+  // en vez de tronar con un RangeError.
+  static String _b64Hash(String input) {
+    final encoded = base64Encode(utf8.encode(input));
+    final end = encoded.length < 24 ? encoded.length : 24;
+    return encoded.substring(0, end);
+  }
 
   // Tarjeta de crédito simulada basada en el userId.
   static String _fakeCard(int userId) {

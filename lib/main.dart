@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:seguridad/services/debug_guard.dart';
+import 'package:seguridad/services/notification_service.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'services/secure_storage_service.dart';
@@ -36,14 +38,18 @@ void main() async {
   );
 
   // Guarda el FCM token en almacén encriptado para mostrarlo en la UI.
-  try {
-    final fcmToken = await FirebaseMessaging.instance.getToken();
-    if (fcmToken != null) {
-      await SecureStorageService.saveFcmToken(fcmToken);
-      debugPrint('FCM Token: $fcmToken');
+  final fcmToken = await FirebaseMessaging.instance.getToken();
+  if (fcmToken != null) {
+    await SecureStorageService.saveFcmToken(fcmToken);
+
+    // Si ya hay sesión guardada, registra el token en el backend
+    final authToken = await SecureStorageService.read(SecureStorageService.keyToken);
+    if (authToken != null) {
+      await NotificationService().registerFcmToken(
+        authToken: authToken,
+        fcmToken: fcmToken,
+      );
     }
-  } catch (e) {
-    debugPrint('No se pudo obtener FCM token: $e');
   }
 
   // Escuchar notificaciones en FOREGROUND — verifica target_user_id.
@@ -74,9 +80,17 @@ void main() async {
     }
   });
 
+  // ── RASP: verificación de Depuración USB (USB Debugging) ────────────────
+  // DebugGuard envuelve TODA la app (DevicePreview + ProviderScope + App)
+  // y se ejecuta antes de que el usuario pueda interactuar con cualquier
+  // pantalla de negocio (incluyendo el login). Si detecta ADB activo en
+  // un entorno que no es de desarrollo (kDebugMode == false), bloquea
+  // la app con un AlertDialog persistente y la cierra al confirmar.
   runApp(
-    DevicePreview(
-      builder: (context) => const ProviderScope(child: App()),
+    DebugGuard(
+      child: DevicePreview(
+        builder: (context) => const ProviderScope(child: App()),
+      ),
     ),
   );
 }
