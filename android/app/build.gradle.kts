@@ -32,6 +32,15 @@ android {
 
     buildTypes {
         release {
+            // Activar R8/ProGuard para ofuscación de la capa Android (Kotlin/Java)
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
             signingConfig = signingConfigs.getByName("debug")
         }
     }
